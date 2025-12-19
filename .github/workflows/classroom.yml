@@ -1,0 +1,110 @@
+name: Autograding Tests
+'on':
+  - push
+  - repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Make Gradle wrapper executable (if present)
+        run: |
+          if [ -f ./gradlew ]; then chmod +x ./gradlew; fi
+
+      - name: Compile Main.java
+        id: compile
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: HelloMEITREX - Compiles
+          command: >-
+            bash -lc '
+            set -e;
+            mkdir -p out;
+            javac -d out src/main/java/Main.java'
+          timeout: 1
+          max-score: 5
+
+      - name: Test Add Function
+        id: test-add
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Test Add Function
+          command: >-
+            bash -lc '
+            if [ -f ./gradlew ]; then
+              ./gradlew test --tests "HelloMEITREXTest.testAdd" --no-daemon --warning-mode all
+            else
+              gradle test --tests "HelloMEITREXTest.testAdd" --no-daemon --warning-mode all
+            fi'
+          timeout: 2
+          max-score: 25
+
+      - name: Test Subtract Function
+        id: test-subtract
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Test Subtract Function
+          command: >-
+            bash -lc '
+            if [ -f ./gradlew ]; then
+              ./gradlew test --tests "HelloMEITREXTest.testSubtract" --no-daemon --warning-mode all
+            else
+              gradle test --tests "HelloMEITREXTest.testSubtract" --no-daemon --warning-mode all
+            fi'
+          timeout: 2
+          max-score: 25
+
+      - name: Test Multiply Function
+        id: test-multiply
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Test Multiply Function
+          command: >-
+            bash -lc '
+            if [ -f ./gradlew ]; then
+              ./gradlew test --tests "HelloMEITREXTest.testMultiply" --no-daemon --warning-mode all
+            else
+              gradle test --tests "HelloMEITREXTest.testMultiply" --no-daemon --warning-mode all
+            fi'
+          timeout: 2
+          max-score: 25
+
+      - name: Test Factorial Function
+        id: test-factorial
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Test Factorial Function
+          command: >-
+            bash -lc '
+            if [ -f ./gradlew ]; then
+              ./gradlew test --tests "HelloMEITREXTest.testFactorial" --no-daemon --warning-mode all
+            else
+              gradle test --tests "HelloMEITREXTest.testFactorial" --no-daemon --warning-mode all
+            fi'
+          timeout: 2
+          max-score: 25
+
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          COMPILE_RESULTS: "${{ steps.compile.outputs.result }}"
+          TEST-ADD_RESULTS: "${{ steps.test-add.outputs.result }}"
+          TEST-SUBTRACT_RESULTS: "${{ steps.test-subtract.outputs.result }}"
+          TEST-MULTIPLY_RESULTS: "${{ steps.test-multiply.outputs.result }}"
+          TEST-FACTORIAL_RESULTS: "${{ steps.test-factorial.outputs.result }}"
+        with:
+          runners: compile,test-add,test-subtract,test-multiply,test-factorial
